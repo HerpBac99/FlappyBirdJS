@@ -1,8 +1,8 @@
 // Define all constants usefull by the server and the client
 var constant = {
 
-  SERVER_PORT:              4242,
-  SOCKET_PORT:              1337,
+  SERVER_PORT:              8080,
+  SOCKET_PORT:              80,
   SOCKET_ADDR:              'http://localhost',
 
   SCREEN_WIDTH:             900,

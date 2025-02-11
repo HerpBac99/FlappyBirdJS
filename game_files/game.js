@@ -151,11 +151,10 @@ function startGameLoop () {
 
 
 exports.startServer = function () {
-  io = require('socket.io').listen(Const.SOCKET_PORT);
-  io.configure(function(){
-    io.set('log level', 2);
+  io = require('socket.io').listen(Const.SOCKET_PORT, { 
+    cors: { origin: '*' }
   });
-
+  
   _gameState = enums.ServerState.WaitingForPlayers;
   
   // Create playersManager instance and register events

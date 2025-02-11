@@ -3,13 +3,21 @@
  */
 var express = require('express'),
 	routes 	= require('./routes'),
-	http 	= require('http'),
+	https 	= require('https'),
 	path 	= require('path'),
 	Const   = require('./sharedConstants').constant,
 	
 	game 	= require('./game_files/game');
 
 var app = express();
+
+const fs = require("fs"); // Добавляем импорт модуля fs
+
+const options = {
+	key: fs.readFileSync("./ssl/server.key"), // Путь к приватному ключу
+	cert: fs.readFileSync("./ssl/server.crt"), // Путь к сертификату
+  };
+
 
 // all environments
 app.set('port', Const.SERVER_PORT);
@@ -29,15 +37,16 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.get('/', routes.index);
-app.get('/birds', routes.birds);
+//app.get('/', routes.index);
+//app.get('/birds', routes.birds);
+app.get('/', routes.birds);
 
 // Route to get shared const file
 app.get('/sharedConstants.js', function(req, res) {
     res.sendfile('sharedConstants.js');
 });
 
-http.createServer(app).listen(app.get('port'), function(){
+https.createServer(options, app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
 
