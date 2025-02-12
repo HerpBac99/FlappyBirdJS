@@ -2,8 +2,8 @@
 var constant = {
 
   SERVER_PORT:              8080,
-  SOCKET_PORT:              80,
-  SOCKET_ADDR:              'http://localhost',
+  SOCKET_PORT:              443,
+  SOCKET_ADDR:              'https://flappymultijscl.griptest.keenetic.link',
 
   SCREEN_WIDTH:             900,
   SCREEN_HEIGHT:            768,

@@ -149,10 +149,16 @@ function startGameLoop () {
   }, 1000 / 60);
 }
 
+const fs = require("fs");
+
 
 exports.startServer = function () {
   io = require('socket.io').listen(Const.SOCKET_PORT, { 
-    cors: { origin: '*' }
+    cors: { origin: "https://flappymultijs.griptest.keenetic.link", // Разрешенный домен
+      methods: ["GET", "POST"],
+      credentials: true},
+    key: fs.readFileSync("./ssl/server.key"), 
+    cert: fs.readFileSync("./ssl/server.crt")
   });
   
   _gameState = enums.ServerState.WaitingForPlayers;
