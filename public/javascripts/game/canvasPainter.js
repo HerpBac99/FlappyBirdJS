@@ -118,12 +118,9 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
   };
 
     that.resetForNewGame = function () {
-    var nb = _picBG.length,
-        i;
-    // Reset state of backgrounds pictures
-    for (i = 0; i < nb; i++) {
-      _picBG[i].resetToDayCycle();
-    };
+    this.clearCanvas();
+    _backgroundOffset = 0;
+    _floorOffset = 0;
   };
 
   that.loadRessources = function (onReadyCallback) {

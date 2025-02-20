@@ -30,6 +30,67 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
       _infPanlTimer,
       _isNight = false;
 
+  // Добавим поддержку Telegram WebApp
+  const tg = window.Telegram.WebApp;
+  
+  // Настроим размер окна
+  function resizeGame() {
+    const gameScreen = document.getElementById('gameScreen');
+    const canvas = document.getElementById('gs-canvas');
+    
+    // Получаем размеры из Telegram WebApp
+    const viewportHeight = tg.viewportHeight || window.innerHeight;
+    const viewportWidth = tg.viewportStableWidth || window.innerWidth;
+    
+    // Вычисляем оптимальный масштаб
+    const scaleX = viewportWidth / Const.SCREEN_WIDTH;
+    const scaleY = viewportHeight / Const.SCREEN_HEIGHT;
+    const scale = Math.min(scaleX, scaleY);
+    
+    // Применяем масштаб к игровому экрану
+    const scaledWidth = Math.floor(Const.SCREEN_WIDTH * scale);
+    const scaledHeight = Math.floor(Const.SCREEN_HEIGHT * scale);
+    
+    // Центрируем игру
+    const leftOffset = Math.floor((viewportWidth - scaledWidth) / 2);
+    const topOffset = Math.floor((viewportHeight - scaledHeight) / 2);
+    
+    // Применяем стили
+    gameScreen.style.width = `${scaledWidth}px`;
+    gameScreen.style.height = `${scaledHeight}px`;
+    gameScreen.style.left = `${leftOffset}px`;
+    gameScreen.style.top = `${topOffset}px`;
+    
+    // Масштабируем canvas
+    canvas.style.width = `${scaledWidth}px`;
+    canvas.style.height = `${scaledHeight}px`;
+    
+    // Сохраняем оригинальные размеры canvas для корректного рендеринга
+    canvas.width = Const.SCREEN_WIDTH;
+    canvas.height = Const.SCREEN_HEIGHT;
+  }
+
+  // Добавляем обработчики изменения размера
+  window.addEventListener('resize', resizeGame);
+  tg.onEvent('viewportChanged', resizeGame);
+  resizeGame();
+
+  // Используем имя пользователя из Telegram
+  function getTelegramUsername() {
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const user = tg.initDataUnsafe.user;
+      // Ограничиваем длину имени до 8 символов
+      let username = user.username || `${user.first_name}`;
+      if (username.length > 8) {
+        username = username.substring(0, 8);
+      }
+      // Заменяем пробелы на подчеркивания
+      username = username.replace(/\s+/g, '_');
+      return username;
+    }
+    return 'Player_1';
+  }
+
   function draw (currentTime, ellapsedTime) {
 
     // If player score is > 15, night !!
@@ -72,265 +133,291 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
   }
 
 
-  function startClient () {
+  function startClient() {
     if (typeof io == 'undefined') {
-      document.getElementById('gs-error-message').innerHTML = 'Cannot retreive socket.io file at the address ' + Const.SOCKET_ADDR + '<br/><br/>Please provide a valid address.';
+      document.getElementById('gs-error-message').innerHTML = 'Cannot retrieve socket.io library';
       showHideMenu(enumPanels.Error, true);
-      console.log('Cannot reach socket.io file !');
       return;
     }
 
     _playerManager = new PlayersManager();
-
     document.getElementById('gs-loader-text').innerHTML = 'Connecting to the server...';
-    _socket = io.connect((Const.SOCKET_ADDR + ':' + Const.SOCKET_PORT), { reconnect: false });
-    _socket.on('connect', function() {
-      
-      console.log('Connection established :)');
-      
-      // Bind disconnect event
-      _socket.on('disconnect', function() {
-        document.getElementById('gs-error-message').innerHTML = 'Connection with the server lost';
-        showHideMenu(enumPanels.Error, true);
-        console.log('Connection with the server lost :( ');
-      });
+    showHideMenu('gs-loader', true);
 
-      // Try to retreive previous player name if exists
-      if (typeof sessionStorage != 'undefined') {
-        if ('playerName' in sessionStorage) {
-          document.getElementById('player-name').value = sessionStorage.getItem('playerName');
+    _socket = io(Const.SOCKET_ADDR, {
+      withCredentials: true,
+      transports: ['polling', 'websocket'],
+      secure: true,
+      autoConnect: true
+    });
+
+    _socket.on('connect', function() {
+      console.log('Connection established');
+      
+      showHideMenu('gs-loader', false);
+      
+      const savedName = sessionStorage.getItem('playerName');
+      const loginForm = document.getElementById('gs-login');
+      const playButton = document.getElementById('play-button');
+      const playerNameInput = document.getElementById('player-name');
+      
+      // Всегда показываем кнопку Play
+      playButton.classList.remove('hidden');
+      
+      if (savedName && savedName !== 'Player_1') {
+        // Если знаем имя - просто сохраняем его
+        playerNameInput.value = savedName;
+        loginForm.classList.add('hidden');
+      } else {
+        // Если не знаем имя - показываем форму ввода
+        const telegramName = getTelegramUsername();
+        if (telegramName && telegramName !== 'Player_1') {
+          playerNameInput.value = telegramName;
+          loginForm.classList.add('hidden');
+        } else {
+          loginForm.classList.remove('hidden');
         }
       }
       
-      // Draw bg and bind button click
-      draw(0, 0);
-      showHideMenu(enumPanels.Login, true);
-      document.getElementById('player-connection').onclick = loadGameRoom;
-  
-    });
-
-    _socket.on('error', function() {
-      document.getElementById('gs-error-message').innerHTML = 'Fail to connect the WebSocket to the server.<br/><br/>Please check the WS address.';
-      showHideMenu(enumPanels.Error, true);
-      console.log('Cannot connect the web_socket ');
-    });
-    
-  }
-
-  function loadGameRoom () {
-    var nick = document.getElementById('player-name').value;
-
-    // If nick is empty or if it has the default value, 
-    if ((nick == '') || (nick == 'Player_1')) {
-      infoPanel(true, 'Please choose your <strong>name</strong> !', 2000);
-      document.getElementById('player-name').focus();
-      return (false);
-    }
-    // Else store it in sessionstorage if available
-    else {
-      if (typeof sessionStorage != 'undefined') {
-        sessionStorage.setItem('playerName', nick);
-      }
-    }
-
-    // Unbind button event to prevent "space click"
-    document.getElementById('player-connection').onclick = function() { return false; };
-
-    // Bind new socket events
-    _socket.on('player_list', function (playersList) {
-      var nb = playersList.length,
-          i;
-
-      // Add this player in the list
-      for (i = 0; i <nb; i++) {
-        _playerManager.addPlayer(playersList[i], _userID);
+      // Обработчик для кнопки Play
+      document.getElementById('play-game').onclick = function() {
+        const currentName = playerNameInput.value;
+        
+        if (currentName && currentName !== 'Player_1') {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('playerName', currentName);
+          }
+          
+          console.log('Send nickname:', currentName);
+          _socket.emit('say_hi', currentName, function(serverState, uuid) {
+            _userID = uuid;
+            changeGameState(serverState);
+            
+            // Настраиваем управление
+            setupControls();
+            
+            // Скрываем все меню
+            loginForm.classList.add('hidden');
+            playButton.classList.add('hidden');
+          });
+        } else {
+          infoPanel(true, 'Please enter your <strong>name</strong> !', 2000);
+          loginForm.classList.remove('hidden');
+          playerNameInput.focus();
+        }
       };
-
-      // Redraw
+      
       draw(0, 0);
     });
-    _socket.on('player_disconnect', function (player) {
-      _playerManager.removePlayer(player);
+
+    _socket.on('connect_error', function(error) {
+      console.error('Connection Error:', error);
+      document.getElementById('gs-error-message').innerHTML = 'Failed to connect to game server. Please try again.';
+      showHideMenu(enumPanels.Error, true);
     });
-    _socket.on('new_player', function (player) {
+
+    // Добавляем обработчики событий
+    _socket.on('player_list', function(playersList) {
+      playersList.forEach(function(player) {
+        _playerManager.addPlayer(player, _userID);
+      });
+      draw(0, 0);
+    });
+
+    _socket.on('new_player', function(player) {
       _playerManager.addPlayer(player);
     });
-    _socket.on('player_ready_state', function (playerInfos) {
-      _playerManager.getPlayerFromId(playerInfos.id).updateFromServer(playerInfos);
-    });
-    _socket.on('update_game_state', function (gameState) {
-      changeGameState(gameState);
-    });
-    _socket.on('game_loop_update', function (serverDatasUpdated) {
-      _playerManager.updatePlayerListFromServer(serverDatasUpdated.players);
-      _pipeList = serverDatasUpdated.pipes;
-    });
-    _socket.on('ranking', function (score) {
-      displayRanking(score);
+
+    _socket.on('player_disconnect', function(player) {
+      _playerManager.removePlayer(player);
     });
 
-    // Send nickname to the server
-    console.log('Send nickname ' + nick);
-    _socket.emit('say_hi', nick, function (serverState, uuid) {
-      _userID = uuid;
-      changeGameState(serverState);
-
-      // Display a message according to the game state
-      if (serverState == enumState.OnGame) {
-        infoPanel(true, '<strong>Please wait</strong> for the previous game to finish...');
-      }
-      else {
-        // Display a little help text
-        if (_isTouchDevice == false)
-          infoPanel(true, 'Press <strong>space</strong> to fly !', 3000);
-        else
-          infoPanel(true, '<strong>Tap</strong> to fly !', 3000);
+    _socket.on('player_ready_state', function(playerInfos) {
+      const player = _playerManager.getPlayerFromId(playerInfos.id);
+      if (player) {
+        player.updateFromServer(playerInfos);
       }
     });
-  
-    // Get input
-    if (_isTouchDevice == false) {
-      document.addEventListener('keydown', function (event) {
-          if (event.keyCode == 32) {
-              inputsManager();
-          }
-      });
-    }
-    else {
-      var evt = window.navigator.msPointerEnabled ? 'MSPointerDown' : 'touchstart';
-      document.addEventListener(evt, inputsManager);
-    }
 
-    // Hide login screen
-    showHideMenu(enumPanels.Login, false);
-    return (false);
+    _socket.on('game_loop_update', function(data) {
+      _playerManager.updatePlayerListFromServer(data.players);
+      _pipeList = data.pipes;
+    });
+
+    _socket.on('update_game_state', changeGameState);
+    _socket.on('ranking', displayRanking);
+
+    // Добавляем обработчик сброса игры
+    _socket.on('game_reset', function() {
+      _lastTime = null;
+      _pipeList = null;
+      _isCurrentPlayerReady = false;
+      _isNight = false;
+      
+      if (_rankingTimer) {
+        clearInterval(_rankingTimer);
+        _rankingTimer = null;
+      }
+      
+      if (_infPanlTimer) {
+        clearTimeout(_infPanlTimer);
+        _infPanlTimer = null;
+      }
+
+      canvasPainter.resetForNewGame();
+    });
   }
 
-  function displayRanking (score) {
-    var nodeMedal = document.querySelector('.gs-ranking-medal'),
-        nodeHS = document.getElementById('gs-highscores-scores'),
-        i, nbHs;
+  function setupControls() {
+    if (_isTouchDevice) {
+      document.addEventListener('touchstart', function(event) {
+        event.preventDefault();
+        inputsManager(event);
+      }, { passive: false });
+      infoPanel(true, '<strong>Tap</strong> to fly !', 3000);
+    } else {
+      document.addEventListener('keydown', function(event) {
+        if (event.keyCode === 32) {
+          event.preventDefault();
+          inputsManager(event);
+        }
+      });
+      infoPanel(true, 'Press <strong>space</strong> to fly !', 3000);
+    }
+  }
 
-    console.log(score);
-
-    // Remove previous medals just in case
-    nodeMedal.classList.remove('third');
-    nodeMedal.classList.remove('second');
-    nodeMedal.classList.remove('winner');
-
-    // Display scores
-    document.getElementById('gs-ranking-score').innerHTML = score.score;
-    document.getElementById('gs-ranking-best').innerHTML = score.bestScore;
-    document.getElementById('gs-ranking-pos').innerHTML = score.rank + ' / ' + score.nbPlayers;
-
-    // Set medal !
-    if (score.rank == 1)
-      nodeMedal.classList.add('winner');
-    else if (score.rank == 2)
-      nodeMedal.classList.add('second');
-    else if (score.rank == 3)
-      nodeMedal.classList.add('third');
-
-    // Display hish scores
-    nodeHS.innerHTML = '';
-    nbHs = score.highscores.length;
-    for (i = 0; i < nbHs; i++) {
-      nodeHS.innerHTML += '<li><span>#' + (i + 1) + '</span> ' + score.highscores[i].player + ' <strong>' + score.highscores[i].score + '</strong></li>';
-    };
-
-    // Show ranking
+  function displayRanking(score) {
+    // Показываем панель Game Over
     showHideMenu(enumPanels.Ranking, true);
 
-    // Display hish scores in a middle of the waiting time
-    window.setTimeout(function () {
-      showHideMenu(enumPanels.HighScores, true);
-    },
-    Const.TIME_BETWEEN_GAMES / 2);
+    // Добавляем таймер обратного отсчета
+    var timeLeft = 5;
+    var restartBtn = document.getElementById('restart-game');
+    var quitBtn = document.getElementById('quit-game');
+    
+    restartBtn.innerHTML = 'Restart (' + timeLeft + ')';
+    
+    var countdownTimer = setInterval(function() {
+      timeLeft--;
+      restartBtn.innerHTML = 'Restart (' + timeLeft + ')';
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownTimer);
+        // Автоматически перезапускаем игру если не было нажатий
+        if (!quitClicked) {
+          restartGame();
+        }
+      }
+    }, 1000);
 
-    // reset graphics in case to prepare the next game
-    canvasPainter.resetForNewGame();
-    _isNight = false;
+    var quitClicked = false;
+
+    // Обработчик для кнопки рестарта - мгновенный рестарт
+    restartBtn.onclick = function() {
+      quitClicked = true; // Предотвращаем автоматический рестарт
+      clearInterval(countdownTimer); // Останавливаем таймер
+      restartGame(); // Сразу запускаем новую игру
+    };
+
+    // Обработчик для кнопки выхода
+    quitBtn.onclick = function() {
+      quitClicked = true;
+      clearInterval(countdownTimer);
+      quitToMenu();
+    };
+
+    function restartGame() {
+      // Очищаем все таймеры
+      if (_rankingTimer) {
+        clearInterval(_rankingTimer);
+        _rankingTimer = null;
+      }
+      if (_infPanlTimer) {
+        clearTimeout(_infPanlTimer);
+        _infPanlTimer = null;
+      }
+      _lastTime = null;
+
+      // Скрываем все панели
+      showHideMenu(enumPanels.Ranking, false);
+      showHideMenu(enumPanels.HighScores, false);
+
+      // Сбрасываем состояния
+      _isCurrentPlayerReady = false;
+      _pipeList = null;
+      _isNight = false;
+      
+      // Сбрасываем графику
+      canvasPainter.resetForNewGame();
+
+      // Сообщаем серверу о рестарте
+      _socket.emit('restart_game');
+    }
+
+    function quitToMenu() {
+      showHideMenu(enumPanels.Ranking, false);
+      showHideMenu(enumPanels.Login, true);
+      // Отключаемся от текущей игры
+      _socket.emit('quit_game');
+      // Сбрасываем состояния
+      _gameState = enumState.Login;
+      _isCurrentPlayerReady = false;
+      _pipeList = null;
+      // Очищаем игроков
+      _playerManager.clear();
+      // Сбрасываем графику
+      canvasPainter.resetForNewGame();
+      _isNight = false;
+      // Разблокируем кнопку Play
+      document.getElementById('play-game').disabled = false;
+    }
   }
 
-  function changeGameState (gameState) {
-    var strLog = 'Server just change state to ';
-
+  function changeGameState(gameState) {
+    console.log('Game state changed to:', gameState);
     _gameState = gameState;
 
     switch (_gameState) {
       case enumState.WaitingRoom:
-        strLog += 'waiting in lobby';
         _isCurrentPlayerReady = false;
         lobbyLoop();
         break;
 
       case enumState.OnGame:
-        strLog += 'on game !';
+        _pipeList = null;
         gameLoop();
         break;
 
       case enumState.Ranking:
-        strLog += 'display ranking';
-        // Start timer for next game
-        _ranking_time = Const.TIME_BETWEEN_GAMES / 1000;
-        
-        // Display the remaining time on the top bar
-        infoPanel(true, 'Next game in <strong>' + _ranking_time + 's</strong>...');
-        _rankingTimer = window.setInterval(function() {
-            // Set seconds left
-            infoPanel(true, 'Next game in <strong>' + (--_ranking_time) + 's</strong>...');
-            
-            // Stop timer if time is running up
-            if (_ranking_time <= 0) {
-              // Reset timer and remove top bar
-              window.clearInterval(_rankingTimer);
-              infoPanel(false);
-              
-              // Reset pipe list and hide ranking panel
-              _pipeList = null;
-              showHideMenu(enumPanels.Ranking, false);
-            }
-          },
-          1000
-        );
-        break;
-      
-      default:
-        console.log('Unknew game state [' + _gameState + ']');
-        strLog += 'undefined state';
-        break;
-    }
-
-    console.log(strLog);
-  }
-
-  function inputsManager () {
-    switch (_gameState) {
-      case enumState.WaitingRoom:
-        _isCurrentPlayerReady = !_isCurrentPlayerReady;
-        _socket.emit('change_ready_state', _isCurrentPlayerReady);
-        _playerManager.getCurrentPlayer().updateReadyState(_isCurrentPlayerReady);
-        break;
-      case enumState.OnGame:
-        _socket.emit('player_jump');
-        break;
-      default:
+        // Обработка состояния рейтинга
         break;
     }
   }
 
-  function showHideMenu (panelName, isShow) {
-    var panel = document.getElementById(panelName),
-        currentOverlayPanel = document.querySelector('.overlay');
+  function inputsManager(event) {
+    if (!_playerManager || !_playerManager.getCurrentPlayer()) return;
+
+    if (_gameState == enumState.WaitingRoom) {
+      _isCurrentPlayerReady = !_isCurrentPlayerReady;
+      _playerManager.getCurrentPlayer().updateReadyState(_isCurrentPlayerReady);
+      _socket.emit('change_ready_state', _isCurrentPlayerReady);
+    }
+    else if (_gameState == enumState.OnGame) {
+      _socket.emit('player_jump');
+    }
+  }
+
+  function showHideMenu(panelName, isShow) {
+    var panel = document.getElementById(panelName);
+    
+    if (!panel) return;
 
     if (isShow) {
-      if (currentOverlayPanel)
-        currentOverlayPanel.classList.remove('overlay');
+      panel.classList.remove('hidden');
       panel.classList.add('overlay');
-    }
-    else {
-      if (currentOverlayPanel)
-        currentOverlayPanel.classList.remove('overlay');
+    } else {
+      panel.classList.add('hidden');
+      panel.classList.remove('overlay');
     }
   }
   

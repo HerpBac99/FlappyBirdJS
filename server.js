@@ -9,6 +9,8 @@ var express = require('express'),
 	
 	game 	= require('./game_files/game');
 
+const crypto = require('crypto');
+
 var app = express();
 
 const fs = require("fs"); // Добавляем импорт модуля fs
@@ -18,6 +20,28 @@ const options = {
 	cert: fs.readFileSync("./ssl/server.crt"), // Путь к сертификату
   };
 
+// Единый CORS middleware
+app.use(function(req, res, next) {
+  const origin = "https://griptest.keenetic.link/";
+  
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Credentials", "true");
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Настройка статических файлов
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: function (res, path, stat) {
+    res.header("Access-Control-Allow-Origin", "https://griptest.keenetic.link/");
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+}));
 
 // all environments
 app.set('port', Const.SERVER_PORT);
@@ -30,7 +54,6 @@ app.use(express.json());
 app.use(express.urlencoded());
 app.use(express.methodOverride());
 app.use(app.router);
-app.use(express.static(path.join(__dirname, 'public')));
 
 // development only
 if ('development' == app.get('env')) {
@@ -46,8 +69,48 @@ app.get('/sharedConstants.js', function(req, res) {
     res.sendfile('sharedConstants.js');
 });
 
-https.createServer(options, app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
+// Функция для проверки данных от Telegram WebApp
+function validateTelegramWebAppData(initData) {
+  const encoded = decodeURIComponent(initData);
+  const searchParams = new URLSearchParams(encoded);
+  const hash = searchParams.get('hash');
+  searchParams.delete('hash');
+
+  // Отсортируем параметры
+  const params = Array.from(searchParams.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+
+  // Создаем HMAC с токеном бота
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN);
+  const calculatedHash = crypto.createHmac('sha256', secret.digest())
+    .update(params)
+    .digest('hex');
+
+  return calculatedHash === hash;
+}
+
+// Добавим middleware для проверки Telegram WebApp
+app.use(function(req, res, next) {
+  // Проверяем только для основного маршрута
+  if (req.path === '/') {
+    const initData = req.query.tgWebAppData;
+    if (initData) {
+      if (!validateTelegramWebAppData(initData)) {
+        return res.status(401).send('Unauthorized');
+      }
+    }
+  }
+  next();
 });
 
-game.startServer();
+// Создаем HTTPS сервер
+const server = https.createServer(options, app);
+
+// Запускаем сервер
+server.listen(Const.SERVER_PORT, function(){
+  console.log('HTTPS Server running on port ' + Const.SERVER_PORT);
+  // Запускаем игровой сервер
+  game.startServer(server);
+});

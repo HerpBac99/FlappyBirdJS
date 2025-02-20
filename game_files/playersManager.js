@@ -126,20 +126,21 @@ PlayersManager.prototype.arePlayersStillAlive = function () {
   return (false);
 };
 
-PlayersManager.prototype.resetPlayersForNewGame = function () {
-  var nbPlayers = _playersList.length,
-      i,
-      updatedList = new Array();
-
-  // reset position counter
+PlayersManager.prototype.resetPlayersForNewGame = function() {
+  var players = [];
   _posOnGrid = 0;
 
-  for (i = 0; i < nbPlayers; i++) {
-    _playersList[i].preparePlayer(_posOnGrid++);
-    updatedList.push(_playersList[i].getPlayerObject());
-  };
+  _playersList.forEach(function(player) {
+    player.preparePlayer(_posOnGrid++);
+    players.push(player.getPlayerObject());
+  });
 
-  return (updatedList);
+  return players;
+};
+
+PlayersManager.prototype.clear = function() {
+  _playersList = [];
+  _posOnGrid = 0;
 };
 
 PlayersManager.prototype.sendPlayerScore = function () {

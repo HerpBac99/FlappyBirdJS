@@ -1,9 +1,9 @@
 // Define all constants usefull by the server and the client
 var constant = {
 
-  SERVER_PORT:              8080,
-  SOCKET_PORT:              443,
-  SOCKET_ADDR:              'https://flappymultijscl.griptest.keenetic.link',
+  SERVER_PORT: 443,
+  SOCKET_PORT: 8080,
+  SOCKET_ADDR: 'https://griptest.keenetic.link/',
 
   SCREEN_WIDTH:             900,
   SCREEN_HEIGHT:            768,
@@ -19,7 +19,12 @@ var constant = {
   DISTANCE_BETWEEN_PIPES:   380,
   MIN_PIPE_HEIGHT:          60,
   MAX_PIPE_HEIGHT:          630,
-  HEIGHT_BETWEEN_PIPES:     150
+  HEIGHT_BETWEEN_PIPES:     150,
+
+  GAME_SPEED: 4,           // Скорость игры
+  PIPE_SPEED: 3,           // Скорость движения труб
+  GRAVITY: 0.4,            // Гравитация
+  FLAP_FORCE: -7          // Сила прыжка
 };
 
 // To be use by the server part, we have to provide the object with exports
