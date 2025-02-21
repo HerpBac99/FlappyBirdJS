@@ -22,7 +22,7 @@ const options = {
 
 // Единый CORS middleware
 app.use(function(req, res, next) {
-  const origin = "https://griptest.keenetic.link/";
+  const origin = "https://flappy.keenetic.link/";
   
   res.header("Access-Control-Allow-Origin", origin);
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -38,7 +38,7 @@ app.use(function(req, res, next) {
 // Настройка статических файлов
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: function (res, path, stat) {
-    res.header("Access-Control-Allow-Origin", "https://griptest.keenetic.link/");
+    res.header("Access-Control-Allow-Origin", "https://flappy.keenetic.link/");
     res.header("Access-Control-Allow-Credentials", "true");
   }
 }));

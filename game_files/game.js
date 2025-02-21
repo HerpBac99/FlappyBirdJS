@@ -170,7 +170,7 @@ function startGameLoop() {
 exports.startServer = function (server) {
   io = require('socket.io')(server, {
     cors: {
-      origin: ["https://griptest.keenetic.link/", "https://127.0.0.1", "https://localhost"],
+      origin: ["https://flappy.keenetic.link/", "https://flappy.keenetic.link", "https://127.0.0.1", "https://localhost"],
       methods: ["GET", "POST"],
       credentials: true,
       allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept"]

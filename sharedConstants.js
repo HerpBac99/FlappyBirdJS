@@ -3,7 +3,7 @@ var constant = {
 
   SERVER_PORT: 443,
   SOCKET_PORT: 8080,
-  SOCKET_ADDR: 'https://griptest.keenetic.link/',
+  SOCKET_ADDR: 'https://flappy.keenetic.link/',
 
   SCREEN_WIDTH:             900,
   SCREEN_HEIGHT:            768,

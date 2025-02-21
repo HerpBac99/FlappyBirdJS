@@ -91,6 +91,18 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
     return 'Player_1';
   }
 
+  // Отображаем имя пользователя
+  function displayUsername() {
+    const username = getTelegramUsername();
+    const userNameElement = document.getElementById('user-name');
+    if (userNameElement) {
+      userNameElement.textContent = `User: ${username}`;
+    }
+  }
+
+  // Вызовите displayUsername после загрузки страницы
+  window.addEventListener('load', displayUsername);
+
   function draw (currentTime, ellapsedTime) {
 
     // If player score is > 15, night !!

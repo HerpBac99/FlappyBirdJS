@@ -150,10 +150,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
     };
 
     // Load Backgrounds
-    // Be carefull, the position in the array matters. First add, first draw !
+    // Be careful, the position in the array matters. First add, first draw !
     for (i = 0; i < BgRessources.length; i++) {
 
-      // If a day ressource exists for thi BG, load it
+      // If a day resource exists for this BG, load it
       if (typeof BgRessources[i].daySrc !== 'undefined') {
         dBg = new Image();
         dBg.src = BgRessources[i].daySrc;
@@ -171,7 +171,7 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       else
         nBg = null;
 
-      // Create a parallax obj with this ressource and add it in the bg array
+      // Create a parallax obj with this resource and add it in the bg array
       _picBG.push(new Parallax(dBg, nBg, BgRessources[i].width, BgRessources[i].height, BgRessources[i].speed, BgRessources[i].posY, Const.SCREEN_WIDTH));
     };
 
