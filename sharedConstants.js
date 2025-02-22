@@ -5,8 +5,8 @@ var constant = {
   SOCKET_PORT: 8080,
   SOCKET_ADDR: 'https://flappy.keenetic.link/',
 
-  SCREEN_WIDTH:             900,
-  SCREEN_HEIGHT:            768,
+  SCREEN_WIDTH:              500,
+  SCREEN_HEIGHT:             768,
   FLOOR_POS_Y:              672,
   LEVEL_SPEED:              0.3,
   TIME_BETWEEN_GAMES:       5000,

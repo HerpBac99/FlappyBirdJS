@@ -30,7 +30,8 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       _nbRessourcesToLoad = getNbRessourcesToLoad(),
       _picGround,
       _parallaxGround,
-      _picPipe,
+      _picPipeUp,
+      _picPipeDown,
       _picBG = new Array();
       _picBirds = new Array();
 
@@ -53,10 +54,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
 
   function drawPipe (pipe) {
     // Draw the first pipe
-    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY - SPRITE_PIPE_HEIGHT, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    ctx.drawImage(_picPipeUp, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY - SPRITE_PIPE_HEIGHT, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
 
     // And the other one
-    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    ctx.drawImage(_picPipeDown, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
   };
 
   function drawScore (score) {
@@ -136,9 +137,13 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
     _parallaxGround = new Parallax(_picGround, null, 900, 96, Const.LEVEL_SPEED, 672, Const.SCREEN_WIDTH);
 
     // Load pipe
-    _picPipe = new Image();
-    _picPipe.src = 'images/pipe.png';
-    _picPipe.onload = function() { onRessourceLoaded(onReadyCallback); };    
+    _picPipeUp = new Image();
+    _picPipeUp.src = 'images/pipe-up.png';
+    _picPipeUp.onload = function() { onRessourceLoaded(onReadyCallback); };    
+
+    _picPipeDown = new Image();
+    _picPipeDown.src = 'images/pipe-down.png';
+    _picPipeDown.onload = function() { onRessourceLoaded(onReadyCallback); };    
 
     // Load birds sprites
     for (i = 0; i < BIRDS_SPRITES.length; i++) {
