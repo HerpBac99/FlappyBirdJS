@@ -14,6 +14,13 @@ var _playersManager,
     _lastTime = null,
     _timer = null;
 
+const DEBUG = true;
+
+function log(...args) {
+  if (DEBUG) {
+    console.log('[GameServer]', ...args); 
+  }
+}
 
 function playerLog(socket, player, nick) {
   // Bind new client events
@@ -168,6 +175,10 @@ function startGameLoop() {
 }
 
 exports.startServer = function (server) {
+  log('1. Запуск игрового сервера');
+  
+  // Инициализация Socket.IO
+  log('2. Инициализация Socket.IO');
   io = require('socket.io')(server, {
     cors: {
       origin: ["https://flappy.keenetic.link/", "https://flappy.keenetic.link", "https://127.0.0.1", "https://localhost"],
@@ -194,9 +205,10 @@ exports.startServer = function (server) {
 
   // On new client connection
   io.sockets.on('connection', function (socket) {
-    console.log('New client connected');
+    log('3. Новое подключение:', socket.id);
     
     socket.on('say_hi', function (nick, fn) {
+      log('4. Новый игрок:', nick);
       var player = _playersManager.addNewPlayer(socket, socket.id);
       socket.data.player = player;
       
@@ -207,6 +219,7 @@ exports.startServer = function (server) {
 
     // Добавляем обработку отключения
     socket.on('disconnect', function() {
+      log('Отключение игрока:', socket.id);
       const player = socket.data.player;
       if (player) {
         _playersManager.removePlayer(player);

@@ -35,6 +35,13 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       _picBG = new Array();
       _picBirds = new Array();
 
+  const DEBUG = true;
+
+  function log(...args) {
+    if (DEBUG) {
+      console.log('[CanvasPainter]', ...args);
+    }
+  }
 
   function getNbRessourcesToLoad () {
     var nbRessources = NB_RESSOURCES_TO_LOAD + BIRDS_SPRITES.length,
@@ -72,14 +79,14 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
   };
 
   that.draw = function (currentTime, ellapsedTime, playerManager, pipes, gameState, isNight) {
+    if (!_isReadyToDraw) {
+      log('Ошибка: Ресурсы еще не загружены');
+      return;
+    }
+
     var nb,
         i,
         players = playerManager.getPlayers();
-
-    if (!_isReadyToDraw) {
-      console.log('[ERROR] : Ressources not yet loaded !');
-      return;
-    }
 
     // First, draw the background
     ctx.fillStyle = '#0099CC';
@@ -125,6 +132,8 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
   };
 
   that.loadRessources = function (onReadyCallback) {
+    log('1. Начало загрузки ресурсов');
+    
     var bird,
         dBg,
         nBg,
@@ -185,10 +194,12 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       var totalRessources = getNbRessourcesToLoad();
       
       if (--_nbRessourcesToLoad <= 0) {
+        log('2. Все ресурсы загружены');
         _isReadyToDraw = true;
         onReadyCallback();
       }
       else {
+        log('Загружен ресурс', (totalRessources - _nbRessourcesToLoad), 'из', totalRessources);
         document.getElementById('gs-loader-text').innerHTML = ('Load ressource ' + (totalRessources - _nbRessourcesToLoad) + ' / ' + totalRessources);
       }
     };

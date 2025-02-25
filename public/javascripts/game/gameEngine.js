@@ -1,7 +1,16 @@
 /*
 *   Game Engine
 */
-require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (canvasPainter, PlayersManager, Const) {
+define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (canvasPainter, PlayersManager, Const) {
+  console.log('GameEngine module loaded');
+
+  const DEBUG = true;
+
+  function log(...args) {
+    if (DEBUG) {
+      console.log('[GameEngine]', ...args);
+    }
+  }
 
   var enumState = {
     Login: 0,
@@ -144,15 +153,28 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
     draw(now, 0);
   }
 
+  let _isClientStarted = false;
 
   function startClient() {
+    if (_isClientStarted) {
+      log('Клиент уже запущен, пропускаем повторный запуск');
+      return;
+    }
+    _isClientStarted = true;
+
+    log('1. Запуск игрового клиента');
+    
     if (typeof io == 'undefined') {
+      log('Ошибка: Socket.IO не найден');
       document.getElementById('gs-error-message').innerHTML = 'Cannot retrieve socket.io library';
       showHideMenu(enumPanels.Error, true);
       return;
     }
 
+    log('2. Инициализация менеджера игроков');
     _playerManager = new PlayersManager();
+    
+    log('3. Подключение к серверу...');
     document.getElementById('gs-loader-text').innerHTML = 'Connecting to the server...';
     showHideMenu('gs-loader', true);
 
@@ -164,11 +186,11 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
     });
 
     _socket.on('connect', function() {
-      console.log('Connection established');
-      
+      log('4. Соединение установлено');
       showHideMenu('gs-loader', false);
       
       const savedName = sessionStorage.getItem('playerName');
+      log('5. Проверка сохраненного имени:', savedName);
       const loginForm = document.getElementById('gs-login');
       const playButton = document.getElementById('play-button');
       const playerNameInput = document.getElementById('player-name');
@@ -230,6 +252,7 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
 
     // Добавляем обработчики событий
     _socket.on('player_list', function(playersList) {
+      log('6. Получен список игроков:', playersList.length);
       playersList.forEach(function(player) {
         _playerManager.addPlayer(player, _userID);
       });
@@ -386,22 +409,24 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
   }
 
   function changeGameState(gameState) {
-    console.log('Game state changed to:', gameState);
+    log('Смена состояния игры на:', gameState);
     _gameState = gameState;
 
     switch (_gameState) {
       case enumState.WaitingRoom:
+        log('Переход в комнату ожидания');
         _isCurrentPlayerReady = false;
         lobbyLoop();
         break;
 
       case enumState.OnGame:
+        log('Начало игры');
         _pipeList = null;
         gameLoop();
         break;
 
       case enumState.Ranking:
-        // Обработка состояния рейтинга
+        log('Показ рейтинга');
         break;
     }
   }

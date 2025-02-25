@@ -108,9 +108,18 @@ app.use(function(req, res, next) {
 // Создаем HTTPS сервер
 const server = https.createServer(options, app);
 
+// В начале файла
+const DEBUG = true;
+
+function log(...args) {
+  if (DEBUG) {
+    console.log('[Server]', ...args);
+  }
+}
+
 // Запускаем сервер
 server.listen(Const.SERVER_PORT, function(){
-  console.log('HTTPS Server running on port ' + Const.SERVER_PORT);
-  // Запускаем игровой сервер
+  log('1. HTTPS Сервер запущен на порту', Const.SERVER_PORT);
+  log('2. Инициализация игрового сервера...');
   game.startServer(server);
 });
