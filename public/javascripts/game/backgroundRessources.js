@@ -5,10 +5,10 @@ define(['../../sharedConstants'], function (Const) {
       { 
         daySrc: 'images/bg.png',
         nightSrc: 'images/bg.png',
-        width: 500,
-        height: 768,
+        width: Const.SCREEN_WIDTH,
+        height: Const.SCREEN_HEIGHT,
         posY: 0,
-        speed: 0
+        speed: 0.3
       }
     ]);
 });

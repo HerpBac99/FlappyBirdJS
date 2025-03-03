@@ -84,51 +84,57 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       return;
     }
 
-    var nb,
-        i,
-        players = playerManager.getPlayers();
-
-    // First, draw the background
-    ctx.fillStyle = '#0099CC';
-    ctx.fillRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
+    // Очищаем canvas перед отрисовкой
+    ctx.clearRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
     
-    // Then backgrounds pictures
-    nb = _picBG.length;
-    for (i = 0; i < nb; i++) {
-      _picBG[i].draw(ctx, ellapsedTime, isNight);
-    };
+    // Убираем заливку синим цветом
+    // ctx.fillStyle = '#0099CC';
+    // ctx.fillRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
+    
+    // Затем отрисовываем фоновые изображения
+    var nb = _picBG.length;
+    for (var i = 0; i < nb; i++) {
+        if (_picBG[i]) {
+            _picBG[i].draw(ctx, ellapsedTime, isNight);
+        }
+    }
 
     // Draw pipes
     if (pipes) {
       nb = pipes.length;
       for (i = 0; i < nb; i++) {
         drawPipe(pipes[i]);
-      };
+      }
     }
 
     // Draw birds !
+    var players = playerManager ? playerManager.getPlayers() : null;
     if (players) {
       nb = players.length;
       for (i = 0; i < nb; i++) {
         players[i].draw(ctx, currentTime, _picBirds, gameState);
-      };
+      }
     }
 
     // Draw score
-    if (gameState == 2)
+    if (gameState == 2 && playerManager && playerManager.getCurrentPlayer()) {
       drawScore(playerManager.getCurrentPlayer().getScore());
+    }
 
     // Last but not least, draw ground
+    /*
     if (pipes)
       _parallaxGround.draw(ctx, currentTime);
     else
       _parallaxGround.draw(ctx, 0);
+    */
   };
 
     that.resetForNewGame = function () {
     this.clearCanvas();
-    _backgroundOffset = 0;
-    _floorOffset = 0;
+    // Удаляем неиспользуемые переменные
+    // _backgroundOffset = 0;
+    // _floorOffset = 0;
   };
 
   that.loadRessources = function (onReadyCallback) {
@@ -139,12 +145,7 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
         nBg,
         i;
 
-    // Load ground
-    _picGround = new Image();
-    _picGround.src = 'images/ground.png';
-    _picGround.onload = function() { onRessourceLoaded(onReadyCallback); };
-    _parallaxGround = new Parallax(_picGround, null, 900, 96, Const.LEVEL_SPEED, 672, Const.SCREEN_WIDTH);
-
+    // Удаляем загрузку ground
     // Load pipe
     _picPipeUp = new Image();
     _picPipeUp.src = 'images/pipe-up.png';

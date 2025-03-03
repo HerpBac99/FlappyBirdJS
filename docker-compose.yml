@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "443:443"
+    volumes:
+      - ./ssl:/app/ssl:ro
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=your_root_password
+      - DB_DATABASE=birds
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: your_root_password
+      MYSQL_DATABASE: birds
+      MYSQL_USER: birds_user
+      MYSQL_PASSWORD: birds_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./birds.sql:/docker-entrypoint-initdb.d/birds.sql:ro
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+volumes:
+  mysql_data: 

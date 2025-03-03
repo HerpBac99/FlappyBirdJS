@@ -46,43 +46,51 @@ define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (c
   function resizeGame() {
     const gameScreen = document.getElementById('gameScreen');
     const canvas = document.getElementById('gs-canvas');
+    const gameContainer = document.querySelector('.game-container');
     
-    // Получаем размеры из Telegram WebApp
-    const viewportHeight = tg.viewportHeight || window.innerHeight;
-    const viewportWidth = tg.viewportStableWidth || window.innerWidth;
+    // Получаем размеры из Telegram WebApp или окна браузера
+    const viewportHeight = window.Telegram?.WebApp?.viewportHeight || window.innerHeight;
+    const viewportWidth = window.Telegram?.WebApp?.viewportStableWidth || window.innerWidth;
     
     // Вычисляем оптимальный масштаб
-    const scaleX = viewportWidth / Const.SCREEN_WIDTH;
-    const scaleY = viewportHeight / Const.SCREEN_HEIGHT;
+    const scaleX = viewportWidth / Const.BASE_WIDTH;
+    const scaleY = viewportHeight / Const.BASE_HEIGHT;
     const scale = Math.min(scaleX, scaleY);
     
-    // Применяем масштаб к игровому экрану
-    const scaledWidth = Math.floor(Const.SCREEN_WIDTH * scale);
-    const scaledHeight = Math.floor(Const.SCREEN_HEIGHT * scale);
+    // Вычисляем размеры контейнера
+    const containerWidth = Math.min(viewportWidth, Const.BASE_WIDTH);
+    const containerHeight = Math.min(viewportHeight, Const.BASE_HEIGHT);
     
-    // Центрируем игру
-    const leftOffset = Math.floor((viewportWidth - scaledWidth) / 2);
-    const topOffset = Math.floor((viewportHeight - scaledHeight) / 2);
+    // Применяем размеры к контейнеру
+    gameContainer.style.width = `${containerWidth}px`;
+    gameContainer.style.height = `${containerHeight}px`;
     
-    // Применяем стили
-    gameScreen.style.width = `${scaledWidth}px`;
-    gameScreen.style.height = `${scaledHeight}px`;
-    gameScreen.style.left = `${leftOffset}px`;
-    gameScreen.style.top = `${topOffset}px`;
+    // Обновляем размеры canvas
+    canvas.width = Const.BASE_WIDTH;
+    canvas.height = Const.BASE_HEIGHT;
     
-    // Масштабируем canvas
-    canvas.style.width = `${scaledWidth}px`;
-    canvas.style.height = `${scaledHeight}px`;
+    // Обновляем позиции UI элементов
+    const playButton = document.getElementById('play-button');
+    if (playButton) {
+      // Позиционируем кнопку относительно контейнера игры
+      const bottomOffset = Math.min(containerHeight * 0.1, 50);
+      playButton.style.bottom = `${bottomOffset}px`;
+    }
     
-    // Сохраняем оригинальные размеры canvas для корректного рендеринга
-    canvas.width = Const.SCREEN_WIDTH;
-    canvas.height = Const.SCREEN_HEIGHT;
+    // Перерисовываем игру
+    if (_gameState) {
+      draw(0, 0);
+    }
   }
 
-  // Добавляем обработчики изменения размера
+  // Добавляем слушатели изменения размера
   window.addEventListener('resize', resizeGame);
-  tg.onEvent('viewportChanged', resizeGame);
-  resizeGame();
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.onEvent('viewportChanged', resizeGame);
+  }
+
+  // Вызываем сразу после загрузки
+  window.addEventListener('load', resizeGame);
 
   // Используем имя пользователя из Telegram
   function getTelegramUsername() {
@@ -190,27 +198,34 @@ define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (c
       showHideMenu('gs-loader', false);
       
       const savedName = sessionStorage.getItem('playerName');
-      log('5. Проверка сохраненного имени:', savedName);
       const loginForm = document.getElementById('gs-login');
       const playButton = document.getElementById('play-button');
       const playerNameInput = document.getElementById('player-name');
       
-      // Всегда показываем кнопку Play
-      playButton.classList.remove('hidden');
+      // Получаем имя из Telegram если возможно
+      const telegramName = getTelegramUsername();
       
       if (savedName && savedName !== 'Player_1') {
-        // Если знаем имя - просто сохраняем его
+        // Если есть сохраненное имя - используем его и скрываем форму
         playerNameInput.value = savedName;
         loginForm.classList.add('hidden');
+        playButton.classList.remove('hidden');
+        
+        // Автоматически подключаемся
+        connectPlayer(savedName);
+      } else if (telegramName && telegramName !== 'Player_1') {
+        // Если есть имя из Telegram - используем его
+        playerNameInput.value = telegramName;
+        loginForm.classList.add('hidden');
+        playButton.classList.remove('hidden');
+        
+        // Сохраняем и подключаемся
+        sessionStorage.setItem('playerName', telegramName);
+        connectPlayer(telegramName);
       } else {
-        // Если не знаем имя - показываем форму ввода
-        const telegramName = getTelegramUsername();
-        if (telegramName && telegramName !== 'Player_1') {
-          playerNameInput.value = telegramName;
-          loginForm.classList.add('hidden');
-        } else {
-          loginForm.classList.remove('hidden');
-        }
+        // Если нет имени - показываем форму ввода
+        loginForm.classList.remove('hidden');
+        playButton.classList.remove('hidden');
       }
       
       // Обработчик для кнопки Play
@@ -218,22 +233,15 @@ define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (c
         const currentName = playerNameInput.value;
         
         if (currentName && currentName !== 'Player_1') {
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('playerName', currentName);
-          }
+          // Сохраняем имя
+          sessionStorage.setItem('playerName', currentName);
           
-          console.log('Send nickname:', currentName);
-          _socket.emit('say_hi', currentName, function(serverState, uuid) {
-            _userID = uuid;
-            changeGameState(serverState);
-            
-            // Настраиваем управление
-            setupControls();
-            
-            // Скрываем все меню
-            loginForm.classList.add('hidden');
-            playButton.classList.add('hidden');
-          });
+          // Скрываем форму и кнопку
+          loginForm.classList.add('hidden');
+          playButton.classList.add('hidden');
+          
+          // Подключаем игрока
+          connectPlayer(currentName);
         } else {
           infoPanel(true, 'Please enter your <strong>name</strong> !', 2000);
           loginForm.classList.remove('hidden');
@@ -392,25 +400,37 @@ define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (c
     function quitToMenu() {
       showHideMenu(enumPanels.Ranking, false);
       showHideMenu(enumPanels.Login, true);
+      
+      // Показываем и активируем кнопку Play
+      document.getElementById('play-button').classList.remove('hidden');
+      document.getElementById('play-game').disabled = false;
+      
       // Отключаемся от текущей игры
       _socket.emit('quit_game');
+      
       // Сбрасываем состояния
       _gameState = enumState.Login;
       _isCurrentPlayerReady = false;
       _pipeList = null;
+      
       // Очищаем игроков
       _playerManager.clear();
+      
       // Сбрасываем графику
       canvasPainter.resetForNewGame();
       _isNight = false;
-      // Разблокируем кнопку Play
-      document.getElementById('play-game').disabled = false;
     }
   }
 
   function changeGameState(gameState) {
     log('Смена состояния игры на:', gameState);
     _gameState = gameState;
+
+    // Скрываем форму и кнопку при любом состоянии кроме Login
+    if (gameState !== enumState.Login) {
+      document.getElementById('gs-login').classList.add('hidden');
+      document.getElementById('play-button').classList.add('hidden');
+    }
 
     switch (_gameState) {
       case enumState.WaitingRoom:
@@ -500,5 +520,20 @@ define(['canvasPainter', 'playersManager', '../../sharedConstants'], function (c
     console.log('Ressources loaded, connect to server...');
     startClient();
   });
+
+  // Функция подключения игрока
+  function connectPlayer(nickname) {
+    console.log('Send nickname:', nickname);
+    _socket.emit('say_hi', nickname, function(serverState, uuid) {
+      _userID = uuid;
+      changeGameState(serverState);
+      
+      // Настраиваем управление
+      setupControls();
+      
+      // Делаем кнопку неактивной
+      document.getElementById('play-game').disabled = true;
+    });
+  }
 
 });

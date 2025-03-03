@@ -19,6 +19,16 @@ define(['../../sharedConstants'], function (Const) {
     this._serverInfos = infos;
     this._isMe = false;
 
+    // Устанавливаем начальную позицию для нового игрока
+    /*
+    if (!infos.posX) {
+      infos.posX = Const.BIRD_START_X;
+    }
+    if (!infos.posY) {
+      infos.posY = Const.BIRD_START_Y;
+    }
+    */
+
     if (uuid && (uuid == infos.id)) {
       this._isMe = true;
       
