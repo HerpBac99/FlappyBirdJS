@@ -1,67 +1,72 @@
 doctype html
 html
   head
-    script(src="https://telegram.org/js/telegram-web-app.js")
-    script(src="https://cdn.socket.io/4.7.4/socket.io.min.js")
+    script(type='text/javascript', src=wsAddress + '/socket.io/socket.io.js').
     
     <link href="/images/favicon.ico" rel="icon" type="image/ico" />
     <meta charset='utf-8'>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Birds.js</title>
 
     <link href="stylesheets/app.css" media="screen" rel="stylesheet" type="text/css" />
-    <script data-main="javascripts/game/gameEngine" src="javascripts/lib/require.min.js"></script>
 
-    script.
-      console.log('[Client] 1. Инициализация Telegram WebApp');
-      window.Telegram.WebApp.ready();
-      
-      console.log('[Client] 2. Установка цветовой схемы');
-      const isDark = window.Telegram.WebApp.colorScheme === 'dark';
-      if (isDark) {
-        document.body.classList.add('dark-theme');
-      }
+    <script data-main="javascripts/game/gameEngine" src="javascripts/lib/require.min.js"></script>
 
   body.
 
     <div id="gameScreen">
-      <div class="game-container">
-        <canvas id="gs-canvas" width="5000" height="7000"></canvas>
+
+      <div id="gs-info-panel">To fly, press your <strong>space bar</strong> !</div>
+      
+      <canvas id="gs-canvas" width="900" height="768"></canvas>
+      
+      <div id="gs-loader" class="inGamePanel overlay">
+
+        <div id="gs-loader-anim-box">
+          <div id="gs-loader-anim-bird"></div>
+        </div>
+        <h2 id="gs-loader-text">Welcome to Birds.js !</h2>
         
-        <div id="gs-loader" class="inGamePanel overlay">
-          <h2 id="gs-loader-text"></h2>
-        </div>
-
-        <div id="gs-login" class="inGamePanel hidden">
-          <div id="login-form">
-            <input type="text" id="player-name" maxlength="8" value="Player_1" />
-          </div>
-        </div>
-
-        <div id="play-button" class="hidden">
-          <input type="button" id="play-game" class="play-btn" value="Играть" />
-        </div>
-
-        <div id="gs-ranking" class="inGamePanel hidden">
-          <h1 id="gs-ranking-title">Game Over</h1>
-          <div class="game-controls">
-            <button id="restart-game" class="game-btn">Restart (5)</button>
-            <button id="quit-game" class="game-btn">Quit</button>
-          </div>
-        </div>
-
-        <div id="gs-highscores" class="inGamePanel hidden">
-          <h1 id="gs-highscores-title">High Scores</h1>
-          <div id="gs-highscores-box">
-            <ul id="gs-highscores-scores">
-            </ul>
-          </div>
-        </div>
-
-        <div id="gs-error" class="inGamePanel hidden">
-          <h1 id="gs-error-title">Ouuuuuups :(</h1>
-          <h2 id="gs-error-message">Something goes wrong. Please reload the page</h2>
-        </div>
-
       </div>
+
+      <div id="gs-login" class="inGamePanel">
+        <h1>Birds.js</h1>
+
+        <input type="text" id="player-name" maxlength="8" value="Player_1" />
+        <input type="button" id="player-connection" value="Play !" />
+      
+      </div>
+
+      <div id="gs-ranking" class="inGamePanel">
+        <h1 id="gs-ranking-title">Game Over</h1>
+        <div id="gs-ranking-box">
+          <div class="gs-ranking-panel">
+            <h3>Medal</h3>
+            <div class="gs-ranking-medal"></div>
+            <strong id="gs-ranking-pos" class="gs-ranking-text gs-ranking-text-mini">- / -</strong>
+          </div>
+          <div class="gs-ranking-panel">
+            <h3>Score</h3>
+            <strong id="gs-ranking-score" class="gs-ranking-text">-</strong>
+            
+            <h3>Best</h3>
+            <strong id="gs-ranking-best" class="gs-ranking-text">-</strong>
+            
+          </div>
+        </div>
+      </div>
+
+      <div id="gs-highscores" class="inGamePanel">
+        <h1 id="gs-highscores-title">High Scores</h1>
+        <div id="gs-highscores-box">
+          <ul id="gs-highscores-scores">
+            
+          </ul>
+        </div>
+      </div>
+
+      <div id="gs-error" class="inGamePanel">
+        <h1 id="gs-error-title">Ouuuuuups :(</h1>
+        <h2 id="gs-error-message">Something goes wrong. Please reload the page</h2>
+      </div>
+
     </div>

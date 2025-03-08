@@ -42,8 +42,12 @@ app.get('/sharedConstants.js', function(req, res) {
     res.sendfile('sharedConstants.js');
 });
 
-https.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
+const server = https.createServer(options, app);
+
+server.listen(Const.SERVER_PORT, function(){
+	log('1. HTTPS Сервер запущен на порту', Const.SERVER_PORT);
+	log('2. Инициализация игрового сервера...');
+	game.startServer(server);
 });
 
 game.startServer();

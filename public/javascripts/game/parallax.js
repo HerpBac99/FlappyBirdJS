@@ -24,47 +24,40 @@ define(function() {
   }
 
   ParallaxBg.prototype.draw = function (ctx, time, isNight) {
-    if (!ctx || !this.width || !this.height) {
-        return;
-    }
+    var drawPos;
 
-    // Обновляем позицию фона
-    this.posX = (this.posX - this.speed) % this.width;
+    // Update BG pos
+    this.posX = (this.posX - Math.floor(time * this.speed)) % this.width;
+    drawPos = this.posX;
 
-    // Нам нужно нарисовать несколько копий фона, чтобы заполнить экран
-    var drawPos = this.posX;
-    
-    try {
-        while (drawPos < this.maxW) {
-            // Рисуем дневной фон
-            if (this.dPic) {
-                ctx.drawImage(
-                    this.dPic,
-                    0, 0,                    // Источник X, Y
-                    this.width, this.height, // Ширина и высота источника
-                    drawPos, this.posY,      // Позиция отрисовки
-                    this.width, this.height  // Размер отрисовки
-                );
-            }
-            
-            // Если есть ночной фон и включен ночной режим
-            if (this.nPic && isNight) {
-                ctx.save();
-                ctx.globalAlpha = this.nightOpacity;
-                ctx.drawImage(
-                    this.nPic,
-                    0, 0,
-                    this.width, this.height,
-                    drawPos, this.posY,
-                    this.width, this.height
-                );
-                ctx.restore();
-            }
-            
-            drawPos += this.width;
+    // Calc opacity
+    this.calcOpacity(time, isNight);
+
+    // While we don't completly fill the screen, draw a part of the bg
+    while (drawPos < this.maxW) {
+
+      // If it's not full night, draw day BG
+      if ((this.dPic) && (this.nightOpacity != 1))
+        ctx.drawImage(this.dPic, drawPos, this.posY, this.width, this.height);
+
+      // If we are in night cycle, redraw the bg with the opaque night ressource
+      if ((this.nPic) && (this.nightCycle == true)) {
+
+        // If it's not full night, save context and apply opacity on the night picture
+        if (this.nightOpacity != 1) {
+          ctx.save();
+          ctx.globalAlpha = this.nightOpacity;
         }
-    } catch (err) {
-        console.error('Ошибка отрисовки фона:', err);
+        
+        // Draw night BG
+        ctx.drawImage(this.nPic, drawPos, this.posY, this.width, this.height);
+
+        if (this.nightOpacity != 1)
+          ctx.restore();
+      }
+
+      // Go to the next part to draw
+      drawPos += this.width;
     }
   };
 

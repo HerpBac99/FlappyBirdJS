@@ -30,18 +30,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       _nbRessourcesToLoad = getNbRessourcesToLoad(),
       _picGround,
       _parallaxGround,
-      _picPipeUp,
-      _picPipeDown,
+      _picPipe,
       _picBG = new Array();
       _picBirds = new Array();
 
-  const DEBUG = true;
-
-  function log(...args) {
-    if (DEBUG) {
-      console.log('[CanvasPainter]', ...args);
-    }
-  }
 
   function getNbRessourcesToLoad () {
     var nbRessources = NB_RESSOURCES_TO_LOAD + BIRDS_SPRITES.length,
@@ -61,10 +53,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
 
   function drawPipe (pipe) {
     // Draw the first pipe
-    ctx.drawImage(_picPipeUp, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY - SPRITE_PIPE_HEIGHT, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY - SPRITE_PIPE_HEIGHT, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
 
     // And the other one
-    ctx.drawImage(_picPipeDown, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
   };
 
   function drawScore (score) {
@@ -79,81 +71,77 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
   };
 
   that.draw = function (currentTime, ellapsedTime, playerManager, pipes, gameState, isNight) {
+    var nb,
+        i,
+        players = playerManager.getPlayers();
+
     if (!_isReadyToDraw) {
-      log('Ошибка: Ресурсы еще не загружены');
+      console.log('[ERROR] : Ressources not yet loaded !');
       return;
     }
 
-    // Очищаем canvas перед отрисовкой
-    ctx.clearRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
+    // First, draw the background
+    ctx.fillStyle = '#0099CC';
+    ctx.fillRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
     
-    // Убираем заливку синим цветом
-    // ctx.fillStyle = '#0099CC';
-    // ctx.fillRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
-    
-    // Затем отрисовываем фоновые изображения
-    var nb = _picBG.length;
-    for (var i = 0; i < nb; i++) {
-        if (_picBG[i]) {
-            _picBG[i].draw(ctx, ellapsedTime, isNight);
-        }
-    }
+    // Then backgrounds pictures
+    nb = _picBG.length;
+    for (i = 0; i < nb; i++) {
+      _picBG[i].draw(ctx, ellapsedTime, isNight);
+    };
 
     // Draw pipes
     if (pipes) {
       nb = pipes.length;
       for (i = 0; i < nb; i++) {
         drawPipe(pipes[i]);
-      }
+      };
     }
 
     // Draw birds !
-    var players = playerManager ? playerManager.getPlayers() : null;
     if (players) {
       nb = players.length;
       for (i = 0; i < nb; i++) {
         players[i].draw(ctx, currentTime, _picBirds, gameState);
-      }
+      };
     }
 
     // Draw score
-    if (gameState == 2 && playerManager && playerManager.getCurrentPlayer()) {
+    if (gameState == 2)
       drawScore(playerManager.getCurrentPlayer().getScore());
-    }
 
     // Last but not least, draw ground
-    /*
     if (pipes)
       _parallaxGround.draw(ctx, currentTime);
     else
       _parallaxGround.draw(ctx, 0);
-    */
   };
 
     that.resetForNewGame = function () {
-    this.clearCanvas();
-    // Удаляем неиспользуемые переменные
-    // _backgroundOffset = 0;
-    // _floorOffset = 0;
+    var nb = _picBG.length,
+        i;
+    // Reset state of backgrounds pictures
+    for (i = 0; i < nb; i++) {
+      _picBG[i].resetToDayCycle();
+    };
   };
 
   that.loadRessources = function (onReadyCallback) {
-    log('1. Начало загрузки ресурсов');
-    
     var bird,
         dBg,
         nBg,
         i;
 
-    // Удаляем загрузку ground
-    // Load pipe
-    _picPipeUp = new Image();
-    _picPipeUp.src = 'images/pipe-up.png';
-    _picPipeUp.onload = function() { onRessourceLoaded(onReadyCallback); };    
+    // Load ground
+    _picGround = new Image();
+    _picGround.src = 'images/ground.png';
+    _picGround.onload = function() { onRessourceLoaded(onReadyCallback); };
+    _parallaxGround = new Parallax(_picGround, null, 900, 96, Const.LEVEL_SPEED, 672, Const.SCREEN_WIDTH);
 
-    _picPipeDown = new Image();
-    _picPipeDown.src = 'images/pipe-down.png';
-    _picPipeDown.onload = function() { onRessourceLoaded(onReadyCallback); };    
+    // Load pipe
+    _picPipe = new Image();
+    _picPipe.src = 'images/pipe.png';
+    _picPipe.onload = function() { onRessourceLoaded(onReadyCallback); };    
 
     // Load birds sprites
     for (i = 0; i < BIRDS_SPRITES.length; i++) {
@@ -165,10 +153,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
     };
 
     // Load Backgrounds
-    // Be careful, the position in the array matters. First add, first draw !
+    // Be carefull, the position in the array matters. First add, first draw !
     for (i = 0; i < BgRessources.length; i++) {
 
-      // If a day resource exists for this BG, load it
+      // If a day ressource exists for thi BG, load it
       if (typeof BgRessources[i].daySrc !== 'undefined') {
         dBg = new Image();
         dBg.src = BgRessources[i].daySrc;
@@ -186,7 +174,7 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       else
         nBg = null;
 
-      // Create a parallax obj with this resource and add it in the bg array
+      // Create a parallax obj with this ressource and add it in the bg array
       _picBG.push(new Parallax(dBg, nBg, BgRessources[i].width, BgRessources[i].height, BgRessources[i].speed, BgRessources[i].posY, Const.SCREEN_WIDTH));
     };
 
@@ -195,12 +183,10 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       var totalRessources = getNbRessourcesToLoad();
       
       if (--_nbRessourcesToLoad <= 0) {
-        log('2. Все ресурсы загружены');
         _isReadyToDraw = true;
         onReadyCallback();
       }
       else {
-        log('Загружен ресурс', (totalRessources - _nbRessourcesToLoad), 'из', totalRessources);
         document.getElementById('gs-loader-text').innerHTML = ('Load ressource ' + (totalRessources - _nbRessourcesToLoad) + ' / ' + totalRessources);
       }
     };
