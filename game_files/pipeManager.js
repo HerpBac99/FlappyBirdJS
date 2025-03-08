@@ -34,34 +34,22 @@ PipeManager.prototype.newPipe = function () {
   return (newPipe);
 };
 
-PipeManager.prototype.updatePipes = function (ellapsedTime) {
-  // Проверяем, есть ли трубы в массиве
-  if (_pipeList.length > 0) {
-    // Если первая труба может быть удалена
-    if (_pipeList[0].canBeDroped()) {
-      _pipeList.shift();
-      // Создаем новую трубу только если их меньше максимального количества
-      if (_pipeList.length < 3) {
-        this.emit('need_new_pipe');
-      }
-    }
-    
-    // Обновляем позиции всех труб
-    _pipeList.forEach(function(pipe) {
-      pipe.update(ellapsedTime);
-    });
+PipeManager.prototype.updatePipes = function (time) {
+  var nbPipes = _pipeList.length,
+      i;
 
-    // Проверяем, нужно ли создать новую трубу
-    if (_pipeList.length > 0) {
-      var lastPipe = _pipeList[_pipeList.length - 1];
-      if (lastPipe.getPipeObject().posX < SPAWN_PIPE_ALERT) {
-        this.emit('need_new_pipe');
-      }
-    }
-  } else {
-    // Если массив пуст, создаем новую трубу
-    this.emit('need_new_pipe');
+  // If the first pipe is out of the screen, erase it
+  if (_pipeList[0].canBeDroped() == true) {
+    _pipeList.shift();
+    nbPipes--;
   }
+
+  for (i = 0; i < nbPipes; i++) {
+    _pipeList[i].update(time);
+  };
+
+  if (_pipeList[nbPipes - 1].getPipeObject().posX < SPAWN_PIPE_ALERT)
+    this.emit('need_new_pipe');
 };
 
 PipeManager.prototype.getPipeList = function () {
@@ -94,14 +82,8 @@ PipeManager.prototype.getPotentialPipeHit = function () {
 };
 
 PipeManager.prototype.flushPipeList = function () {
-  _pipeList = [];
-  // Создаем новую трубу только при явном запросе
-  // this.emit('need_new_pipe');
+  _pipeList = new Array();
 };
 
-PipeManager.prototype.reset = function() {
-  _pipeList = [];
-  this.newPipe(); // Создаем первую трубу с начальными параметрами
-};
 
 module.exports = PipeManager;
