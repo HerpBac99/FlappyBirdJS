@@ -52,11 +52,43 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
   }
 
   function drawPipe (pipe) {
-    // Draw the first pipe
-    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY - SPRITE_PIPE_HEIGHT, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    // ---- ПОДРОБНОЕ ОБЪЯСНЕНИЕ ОТРИСОВКИ ТРУБ ----
+    // 
+    // Проблема была в том, что трубы отрисовывались с красными прямоугольниками по бокам.
+    // Причина в том, что при отрисовке использовался весь спрайт, включая прозрачные области,
+    // которые заполнялись красным цветом из-за особенностей отрисовки.
+    //
+    // Для исправления:
+    // 1. Изменяем размеры вырезаемой области изображения, чтобы исключить прозрачные части
+    // 2. Устанавливаем правильные пропорции отрисовки
 
-    // And the other one
-    ctx.drawImage(_picPipe, 0, 0, SPRITE_PIPE_WIDTH, SPRITE_PIPE_HEIGHT, pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT);
+    // Обновленные размеры для вырезания центральной части спрайта без прозрачных областей
+    var srcX = 30;  // Начальная X-координата в спрайте (пропускаем прозрачные пиксели)
+    var srcWidth = SPRITE_PIPE_WIDTH - 60;  // Используем только непрозрачную часть спрайта
+
+    // Отрисовка верхней трубы (перевёрнутой)
+    ctx.save(); // Сохраняем текущее состояние контекста
+    ctx.translate(pipe.posX + Const.PIPE_WIDTH/2, pipe.posY - SPRITE_PIPE_HEIGHT/2); // Перемещаем к центру трубы
+    ctx.rotate(Math.PI); // Поворачиваем на 180 градусов
+
+    // Рисуем только центральную часть спрайта без прозрачных краев
+    ctx.drawImage(
+        _picPipe,                    // Изображение трубы
+        srcX, 0,                     // Начинаем с отступом слева, чтобы исключить прозрачную часть
+        srcWidth, SPRITE_PIPE_HEIGHT, // Берем только непрозрачную часть по ширине
+        -Const.PIPE_WIDTH/2, -SPRITE_PIPE_HEIGHT/2, // Координаты для отрисовки
+        Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT   // Размеры трубы при отрисовке
+    );
+    ctx.restore(); // Восстанавливаем состояние контекста
+
+    // Отрисовка нижней трубы
+    ctx.drawImage(
+        _picPipe,                    // Изображение трубы
+        srcX, 0,                     // Начинаем с отступом слева, чтобы исключить прозрачную часть
+        srcWidth, SPRITE_PIPE_HEIGHT, // Берем только непрозрачную часть по ширине
+        pipe.posX, pipe.posY + Const.HEIGHT_BETWEEN_PIPES, // Координаты для отрисовки нижней трубы
+        Const.PIPE_WIDTH, SPRITE_PIPE_HEIGHT   // Размеры трубы при отрисовке
+    );
   };
 
   function drawScore (score) {
@@ -80,25 +112,41 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       return;
     }
 
-    // First, draw the background
+    // Очищаем весь канвас голубым цветом (небо)
     ctx.fillStyle = '#0099CC';
     ctx.fillRect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
     
-    // Then backgrounds pictures
+    // Отрисовываем фоновые изображения (облака, город, деревья)
     nb = _picBG.length;
     for (i = 0; i < nb; i++) {
       _picBG[i].draw(ctx, ellapsedTime, isNight);
     };
 
-    // Draw pipes
+    // Отрисовываем землю (важно отрисовать перед трубами)
+    if (pipes)
+      _parallaxGround.draw(ctx, currentTime);
+    else
+      _parallaxGround.draw(ctx, 0);
+
+    // Устанавливаем область отрисовки только в пределах игрового поля
+    // Это предотвратит отрисовку труб за пределами игрового экрана
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, Const.SCREEN_WIDTH, Const.SCREEN_HEIGHT);
+    ctx.clip();
+
+    // Отрисовываем трубы только в пределах игрового поля
     if (pipes) {
       nb = pipes.length;
       for (i = 0; i < nb; i++) {
-        drawPipe(pipes[i]);
+        // Проверяем, находится ли труба в пределах видимой области экрана
+        if (pipes[i].posX + Const.PIPE_WIDTH > 0 && pipes[i].posX < Const.SCREEN_WIDTH) {
+          drawPipe(pipes[i]);
+        }
       };
     }
 
-    // Draw birds !
+    // Отрисовываем птиц
     if (players) {
       nb = players.length;
       for (i = 0; i < nb; i++) {
@@ -106,15 +154,11 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
       };
     }
 
-    // Draw score
+    ctx.restore();
+
+    // Отрисовываем счет
     if (gameState == 2)
       drawScore(playerManager.getCurrentPlayer().getScore());
-
-    // Last but not least, draw ground
-    if (pipes)
-      _parallaxGround.draw(ctx, currentTime);
-    else
-      _parallaxGround.draw(ctx, 0);
   };
 
     that.resetForNewGame = function () {

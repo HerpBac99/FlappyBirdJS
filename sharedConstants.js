@@ -5,35 +5,20 @@ var constant = {
   SOCKET_ADDR: 'https://flappy.keenetic.link',
 
   // Базовые размеры для расчета пропорций
-  BASE_WIDTH: 500,
-  BASE_HEIGHT: 700,
-  
-  // Динамические размеры (будут установлены в runtime)
-  SCREEN_WIDTH: typeof window !== 'undefined' ? 
-    Math.min(window.innerWidth, 500) : 500,
-  SCREEN_HEIGHT: typeof window !== 'undefined' ? 
-    Math.min(window.innerHeight, 700) : 700,
-
-  FLOOR_POS_Y: 700,
+  SCREEN_WIDTH:             900,
+  SCREEN_HEIGHT:            768,
+  FLOOR_POS_Y:              672,
   LEVEL_SPEED:              0.3,
   TIME_BETWEEN_GAMES:       5000,
 
-  BIRD_START_X: 75,
-  BIRD_START_Y: 350,
-  BIRD_WIDTH: 42,
-  BIRD_HEIGHT: 30,
+  BIRD_WIDTH:               42,
+  BIRD_HEIGHT:              30,
 
-  // Pipe constants
   PIPE_WIDTH:               100,
-  DISTANCE_BETWEEN_PIPES:   250,
-  MIN_PIPE_HEIGHT:          160,
-  MAX_PIPE_HEIGHT:          430,
-  HEIGHT_BETWEEN_PIPES:     150,
-
-  GAME_SPEED: 4,           // Скорость игры
-  PIPE_SPEED: 3,           // Скорость движения труб
-  GRAVITY: 0.4,            // Гравитация
-  FLAP_FORCE: -7          // Сила прыжка
+  DISTANCE_BETWEEN_PIPES:   380,
+  MIN_PIPE_HEIGHT:          60,
+  MAX_PIPE_HEIGHT:          630,
+  HEIGHT_BETWEEN_PIPES:     150
 };
 
 // To be use by the server part, we have to provide the object with exports

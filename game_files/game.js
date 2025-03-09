@@ -105,6 +105,9 @@ function startGameLoop () {
   // Change server state
   updateGameState(enums.ServerState.OnGame, true);
 
+  // Очищаем список труб при старте игры, чтобы избежать отображения труб до начала
+  _pipeManager.flushPipeList();
+  
   // Create the first pipe
   _pipeManager.newPipe();
 
