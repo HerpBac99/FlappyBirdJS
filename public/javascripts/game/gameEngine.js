@@ -74,47 +74,67 @@ require(['canvasPainter', 'playersManager', '../../sharedConstants'], function (
 
   function startClient () {
     if (typeof io == 'undefined') {
-      document.getElementById('gs-error-message').innerHTML = 'Cannot retreive socket.io file at the address ' + Const.SOCKET_ADDR + '<br/><br/>Please provide a valid address.';
+      document.getElementById('gs-error-message').innerHTML = 'Cannot retrieve socket.io file at the address ' + Const.SOCKET_ADDR + '<br/><br/>Please check your network connection or try again later.';
       showHideMenu(enumPanels.Error, true);
-      console.log('Cannot reach socket.io file !');
+      console.error('Cannot reach socket.io file! The library was not loaded correctly.');
       return;
     }
 
     _playerManager = new PlayersManager();
 
     document.getElementById('gs-loader-text').innerHTML = 'Connecting to the server...';
-    _socket = io.connect((Const.SOCKET_ADDR + ':' + Const.SOCKET_PORT), { reconnect: false });
-    _socket.on('connect', function() {
+    try {
+      console.log('Attempting to connect to Socket.IO server at:', Const.SOCKET_ADDR);
+      _socket = io.connect(Const.SOCKET_ADDR, { 
+        reconnect: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        transports: ['websocket', 'polling']
+      });
       
-      console.log('Connection established :)');
-      
-      // Bind disconnect event
-      _socket.on('disconnect', function() {
-        document.getElementById('gs-error-message').innerHTML = 'Connection with the server lost';
+      // Add error handling for connection
+      _socket.on('connect_error', function(error) {
+        console.error('Connection error:', error);
+        document.getElementById('gs-error-message').innerHTML = 'Error connecting to the server: ' + error.message;
         showHideMenu(enumPanels.Error, true);
-        console.log('Connection with the server lost :( ');
+      });
+      
+      _socket.on('connect', function() {
+        
+        console.log('Connection established :)');
+        
+        // Bind disconnect event
+        _socket.on('disconnect', function() {
+          document.getElementById('gs-error-message').innerHTML = 'Connection with the server lost';
+          showHideMenu(enumPanels.Error, true);
+          console.log('Connection with the server lost :( ');
+        });
+
+        // Try to retreive previous player name if exists
+        if (typeof sessionStorage != 'undefined') {
+          if ('playerName' in sessionStorage) {
+            document.getElementById('player-name').value = sessionStorage.getItem('playerName');
+          }
+        }
+        
+        // Draw bg and bind button click
+        draw(0, 0);
+        showHideMenu(enumPanels.Login, true);
+        document.getElementById('player-connection').onclick = loadGameRoom;
+    
       });
 
-      // Try to retreive previous player name if exists
-      if (typeof sessionStorage != 'undefined') {
-        if ('playerName' in sessionStorage) {
-          document.getElementById('player-name').value = sessionStorage.getItem('playerName');
-        }
-      }
+      _socket.on('error', function() {
+        document.getElementById('gs-error-message').innerHTML = 'Fail to connect the WebSocket to the server.<br/><br/>Please check the WS address.';
+        showHideMenu(enumPanels.Error, true);
+        console.log('Cannot connect the web_socket ');
+      });
       
-      // Draw bg and bind button click
-      draw(0, 0);
-      showHideMenu(enumPanels.Login, true);
-      document.getElementById('player-connection').onclick = loadGameRoom;
-  
-    });
-
-    _socket.on('error', function() {
-      document.getElementById('gs-error-message').innerHTML = 'Fail to connect the WebSocket to the server.<br/><br/>Please check the WS address.';
+    } catch (e) {
+      console.error('Error connecting to Socket.IO:', e);
+      document.getElementById('gs-error-message').innerHTML = 'Error connecting to the server: ' + e.message;
       showHideMenu(enumPanels.Error, true);
-      console.log('Cannot connect the web_socket ');
-    });
-    
+    }
   }
 
   function loadGameRoom () {

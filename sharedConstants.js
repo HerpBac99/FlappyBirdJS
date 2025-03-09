@@ -2,8 +2,7 @@
 var constant = {
 
   SERVER_PORT: 443,
-  SOCKET_PORT: 8080,
-  SOCKET_ADDR: 'https://flappy.keenetic.link/',
+  SOCKET_ADDR: 'https://flappy.keenetic.link',
 
   // Базовые размеры для расчета пропорций
   BASE_WIDTH: 500,

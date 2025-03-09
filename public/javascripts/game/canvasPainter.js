@@ -140,7 +140,7 @@ define(['parallax', 'backgroundRessources', '../../sharedConstants'], function (
 
     // Load pipe
     _picPipe = new Image();
-    _picPipe.src = 'images/pipe.png';
+    _picPipe.src = 'images/pipe-up.png';
     _picPipe.onload = function() { onRessourceLoaded(onReadyCallback); };    
 
     // Load birds sprites

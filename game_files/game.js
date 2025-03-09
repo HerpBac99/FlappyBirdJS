@@ -14,34 +14,32 @@ var _playersManager,
 
 
 function playerLog (socket, nick) {
-  // Retreive PlayerInstance
-  socket.get('PlayerInstance', function (error, player) {
+  // Retrieve PlayerInstance from socket.data
+  var player = socket.data.PlayerInstance;
 
-    if (error)
-      console.error(error);
-    else {
+  if (!player) {
+    console.error('Player instance not found');
+  } else {
+    // Bind new client events
+    socket.on('change_ready_state', function (readyState) {
+      
+      // If the server is currently waiting for players, update ready state
+      if (_gameState == enums.ServerState.WaitingForPlayers) {
+        _playersManager.changeLobbyState(player, readyState);
+        socket.broadcast.emit('player_ready_state', player.getPlayerObject());
+      }
+    });
+    socket.on('player_jump', function () {
+      player.jump();
+    });
 
-      // Bind new client events
-      socket.on('change_ready_state', function (readyState) {
-        
-        // If the server is currently waiting for players, update ready state
-        if (_gameState == enums.ServerState.WaitingForPlayers) {
-          _playersManager.changeLobbyState(player, readyState);
-          socket.broadcast.emit('player_ready_state', player.getPlayerObject());
-        }
-      });
-      socket.on('player_jump', function () {
-        player.jump();
-      });
+    // Set player's nickname and prepare him for the next game
+    _playersManager.prepareNewPlayer(player, nick);
 
-      // Set player's nickname and prepare him for the next game
-      _playersManager.prepareNewPlayer(player, nick);
-
-      // Notify new client about other players AND notify other about the new one ;)
-      socket.emit('player_list', _playersManager.getPlayerList());
-      socket.broadcast.emit('new_player', player.getPlayerObject());
-    }
-  });
+    // Notify new client about other players AND notify other about the new one ;)
+    socket.emit('player_list', _playersManager.getPlayerList());
+    socket.broadcast.emit('new_player', player.getPlayerObject());
+  }
 }
 
 function updateGameState (newState, notifyClients) {
@@ -151,7 +149,7 @@ function startGameLoop () {
 }
 
 
-exports.startServer = function () {
+exports.startServer = function (server) {
   io = require('socket.io')(server, {
     cors: {
       origin: ["https://flappy.keenetic.link/", "https://flappy.keenetic.link", "https://127.0.0.1", "https://localhost"],
@@ -183,23 +181,25 @@ exports.startServer = function () {
     // Add new player
     var player = _playersManager.addNewPlayer(socket, socket.id);
     
+    // Store PlayerInstance in socket.data
+    socket.data = socket.data || {};
+    socket.data.PlayerInstance = player;
+    
     // Register to socket events
     socket.on('disconnect', function () {
-      socket.get('PlayerInstance', function (error, player) {
+      var player = socket.data.PlayerInstance;
+      if (player) {
         _playersManager.removePlayer(player);
         socket.broadcast.emit('player_disconnect', player.getPlayerObject());
         player = null;
-      });
+      }
     });
     socket.on('say_hi', function (nick, fn) {
       fn(_gameState, player.getID());
       playerLog(socket, nick);
     });
-
-    // Remember PlayerInstance and push it to the player list
-    socket.set('PlayerInstance', player);
   });
   
 
-  console.log('Game started and waiting for players on port ' + Const.SOCKET_PORT);
+  console.log('Game started and waiting for players on port ' + Const.SERVER_PORT);
 };
